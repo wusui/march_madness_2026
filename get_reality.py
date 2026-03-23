@@ -29,12 +29,8 @@ def get_reality(tourney, orgval):
     wteamlist = list(map(lambda a: a.text, blist))[64:]
     playedlist = list(filter(lambda a: a != 'TBD', wteamlist))
     endofroundpts = [48, 56, 60]
-    if len(playedlist) <= endofroundpts[0]:
+    if len(playedlist) in endofroundpts[0]:
         write_reality(playedlist)
-    else:
-        if len(playedlist) <= endofroundpts[1]:
-            wteamlist = wteamlist[0:endofroundpts[1]]
-        write_reality(wteamlist)
 
 if __name__ == "__main__":
     get_reality('mens', 'Mad_as_a_March_Llama')
