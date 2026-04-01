@@ -115,15 +115,8 @@ def make_html(solution):
     def set_level(fields):
         """
         Generate the header text for the table.
-
-        fields are the columns in the html table being produced.  There
-        is a column for each game played in the round, plus a name column,
-        a number of winning outcomes column, and a probable payoff column.
-        So, for example, the third round will have 8 game columns,
-        and 3 extra columns for a total of 11.
         """
-        return {11: 'Sweet Sixteen', 7: 'Elite Eight', 5: 'Final Four'}[
-                    len(fields)]
+        return f'{64 - fields[0][2]} teams left'
     def get_template():
         """
         If there is a ../madlib directory, use that directory to find
@@ -137,10 +130,10 @@ def make_html(solution):
         return solution
     environment = Environment(loader=FileSystemLoader(get_template()))
     template = environment.get_template('template.html')
-    oheader = df_columns(solution[0])
-    dframe = pd.DataFrame(df_rows(solution[0]), columns=oheader)
+    oheader = df_columns(solution[0][0])
+    dframe = pd.DataFrame(df_rows(solution[0][0]), columns=oheader)
     tourn = solution[1]
-    tlevel = set_level(oheader)
+    tlevel = set_level(solution)
     tyear = datetime.date.today().year
     return template.render(tourn=tourn, out_table=dframe.to_html(
             escape=False, index=False), tyear=tyear, tlevel=tlevel)

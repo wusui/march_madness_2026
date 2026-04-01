@@ -29,6 +29,7 @@ def get_reality(tourney, orgval):
     wteamlist = list(map(lambda a: a.text, blist))[64:]
     playedlist = list(filter(lambda a: a != 'TBD', wteamlist))
     endofroundpts = [48, 56, 60]
+    print(len(playedlist))
     if len(playedlist) in endofroundpts:
         write_reality(playedlist)
 

@@ -23,9 +23,9 @@ def predictions(tourney, orgdir):
     with open(f'{orgdir}/{tourney}_reality.json', 'r', encoding='utf-8') as fd1:
         in_data = fd1.read()
     reality = json.loads(in_data)
-    if len(reality) not in [48, 56, 60]:
-        print("Can't handle this number of games")
-        return 'Error'
+    #if len(reality) not in [48, 56, 60]:
+    #    print("Can't handle this number of games")
+    #    return 'Error'
     with open(f'{orgdir}/{tourney}_picks.json', 'r', encoding='utf-8') as fd2:
         tdata = fd2.read()
     picks = json.loads(tdata)
@@ -50,3 +50,4 @@ def make_rpage(tourney, orgdir):
 
 if __name__ == "__main__":
     make_rpage('mens', 'Mad_as_a_March_Llama')
+    #make_rpage('womens', 'Mad_as_a_March_Llama')
