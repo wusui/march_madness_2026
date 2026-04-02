@@ -42,7 +42,7 @@ def get_picks_from_brackets(tourney, orgval):
         pick_values = pfile
         my_pix = extract_picks_from_bracket(pick_values)
         print(brack[1])
-        entry_list.append([brack[1], my_pix[64:]])
+        entry_list.append([brack[0], my_pix[64:]])
     result = dict(list(filter(None, entry_list)))
     with open(f"{orgval}/{tourney}_picks.json", 'w', encoding='utf-8') as ofd:
         json.dump(result, ofd, indent=4)

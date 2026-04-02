@@ -42,7 +42,7 @@ def make_rpage(tourney, orgdir):
             return 64 - len(resultsl)
     def gen_result_page():
         return f'{orgdir}/{tourney}_results_{teams_left()}.html'
-    display_html = make_html(predictions(tourney, orgdir))
+    display_html = make_html(predictions(tourney, orgdir), orgdir)
     if display_html == 'Error':
         return
     with open(gen_result_page(), 'w', encoding='utf-8') as fd3:

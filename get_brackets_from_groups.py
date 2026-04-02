@@ -85,7 +85,7 @@ def get_groups(in_groups):
 
 def get_dir_struct():
     """
-    Make sure the intermediate directory names have the right year
+    Make sure the getintermediate directory names have the right year
     """
     yrv = date.today().year
     return {'mens': f'tournament-challenge-bracket-{yrv}',
@@ -97,7 +97,6 @@ def save_brackets(orgdir):
     """
     os.makedirs(orgdir, exist_ok=True)
     brackets = get_brackets_from_groups(orgdir)
-    print(brackets)
     with open(f'{orgdir}/brackets.json', 'w', encoding='utf-8') as json_file:
         json.dump(brackets, json_file, indent=4)
 

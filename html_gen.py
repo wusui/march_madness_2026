@@ -8,6 +8,7 @@ the text header.
 """
 import os
 import datetime
+import json
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 
@@ -54,7 +55,7 @@ def get_ccode(fgame):
         return setf_dvals([abs(dvals[0] - dvals[1]), dvals[0] + dvals[1]])
     return gc_inner(list(fgame.values()))
 
-def df_rows(solution):
+def df_rows(solution, id_peeps):
     """
     solution is a list of row entries where each row is a list of
     cell values.  Format each cell value to contain the html data
@@ -73,7 +74,8 @@ def df_rows(solution):
             """
             Format the first three columns of a row entry
             """
-            return [row['name'], row['w_outcomes'], strfy(row['pct_pt'])]
+            return [id_peeps[row['name']], row['w_outcomes'],
+                                        strfy(row['pct_pt'])]
         def game_field(fgame):
             """
             fgame is a dict indexed by team names whose values are the
@@ -105,7 +107,7 @@ def df_rows(solution):
         return left_cols() + list(map(game_field, row['games']))
     return list(map(const_row, solution))
 
-def make_html(solution):
+def make_html(solution, orgdir):
     """
     String together all the pieces that compose the html data returned
     as a string.  A pandas dataFrame is used save the table information.
@@ -131,7 +133,11 @@ def make_html(solution):
     environment = Environment(loader=FileSystemLoader(get_template()))
     template = environment.get_template('template.html')
     oheader = df_columns(solution[0][0])
-    dframe = pd.DataFrame(df_rows(solution[0][0]), columns=oheader)
+    prefix = solution[1].replace("'",'').lower()
+    with open(f'{orgdir}/brackets.json', 'r', encoding='utf-8') as fd2:
+        people = fd2.read()
+    id_peeps = dict(json.loads(people)[prefix])
+    dframe = pd.DataFrame(df_rows(solution[0][0], id_peeps), columns=oheader)
     tourn = solution[1]
     tlevel = set_level(solution)
     tyear = datetime.date.today().year
