@@ -27,7 +27,7 @@ def df_columns(solution):
             return list(map(lambda a: list(a.keys()), solution[0]['games']))
         return list(map(lambda a: '<div>' + a[0] + '</div><div>' + \
                         a[1] + '</div>', igms()))
-    return ['<div>NAME<div>', '<div>Winning</div>\n<div>Outcomes</div>',
+    return ['<div>NAME</div>', '<div>Winning</div>\n<div>Outcomes</div>',
             '<div>Probable</div>\n<div>Payoff</div>\n'] + mk_games()
 
 def get_ccode(fgame):
@@ -128,6 +128,21 @@ def make_html(solution, orgdir):
         if 'madlib' in pythonpath_os:
             return f'..{os.sep}madlib'
         return '.'
+    def find_elims():
+        teams_left = 64 - solution[0][2]
+        if teams_left == 16:
+            prevbl = list(map(lambda a: id_peeps[a], id_peeps))
+        else:
+            ppagen = teams_left + 1
+            tourn = solution[1].replace("'", '').lower()
+            prev = pd.read_html(f'{orgdir}/{tourn}_results_{ppagen}.html')[0]
+            prevbl = prev.iloc[:,0].tolist()
+        thingsnow = list(map(lambda a: a['name'], solution[0][0]))
+        curr_p = list(map(lambda a: id_peeps[a], thingsnow))
+        xlist = list(filter(lambda a: a not in curr_p, prevbl))
+        if len(xlist) == 0:
+            return "None"
+        return ", ".join(xlist)
     if solution == 'Error':
         return solution
     environment = Environment(loader=FileSystemLoader(get_template()))
@@ -138,8 +153,8 @@ def make_html(solution, orgdir):
         people = fd2.read()
     id_peeps = dict(json.loads(people)[prefix])
     dframe = pd.DataFrame(df_rows(solution[0][0], id_peeps), columns=oheader)
-    tourn = solution[1]
     tlevel = set_level(solution)
     tyear = datetime.date.today().year
-    return template.render(tourn=tourn, out_table=dframe.to_html(
-            escape=False, index=False), tyear=tyear, tlevel=tlevel)
+    return template.render(tourn=solution[1], out_table=dframe.to_html(
+            escape=False, index=False), tyear=tyear, tlevel=tlevel,
+            loser_list=find_elims())
