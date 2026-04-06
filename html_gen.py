@@ -10,7 +10,9 @@ import os
 import datetime
 import json
 from jinja2 import Environment, FileSystemLoader
+from bs4 import BeautifulSoup
 import pandas as pd
+from get_reality import get_big_brack, get_ltp_rnd
 
 def df_columns(solution):
     """
@@ -24,7 +26,8 @@ def df_columns(solution):
             """
             Generate the column headers for a game
             """
-            return list(map(lambda a: list(a.keys()), solution[0]['games']))
+            return list(map(lambda a: list(a.keys()),
+                            solution[0][0][0]['games']))
         return list(map(lambda a: '<div>' + a[0] + '</div><div>' + \
                         a[1] + '</div>', igms()))
     return ['<div>NAME</div>', '<div>Winning</div>\n<div>Outcomes</div>',
@@ -107,6 +110,19 @@ def df_rows(solution, id_peeps):
         return left_cols() + list(map(game_field, row['games']))
     return list(map(const_row, solution))
 
+def get_sizes(bdata, numb):
+    """
+    Get round indices and round starting points
+    """
+    pgen, spt = bdata[62:63], 62
+    if numb in range(48, 56):
+        pgen, spt = bdata[48:56], 48
+    if numb in range(56, 60):
+        pgen, spt = bdata[56:60], 56
+    if numb in range(60, 62):
+        pgen, spt = bdata[60:62], 60
+    return pgen, spt
+
 def make_html(solution, orgdir):
     """
     String together all the pieces that compose the html data returned
@@ -128,33 +144,89 @@ def make_html(solution, orgdir):
         if 'madlib' in pythonpath_os:
             return f'..{os.sep}madlib'
         return '.'
-    def find_elims():
-        teams_left = 64 - solution[0][2]
-        if teams_left == 16:
-            prevbl = list(map(lambda a: id_peeps[a], id_peeps))
+    def diff_from_prev(pg_no):
+        tourn = solution[1].replace("'", '').lower()
+        with open (f'{orgdir}/{tourn}_results_{pg_no}.html', 'r',
+                   encoding='utf-8') as ifdh:
+            prev = ifdh.read()
+            pparser = BeautifulSoup(prev, 'html.parser')
+            prs1 = pparser.find('h1', id='score').get_text()
+            prs2 = prs1.split('--')[0].strip().split(' ')[0:-1]
+            return prs2[0]
+    def gscore(numb):
+        if numb < 48:
+            return ''
+        tourn = solution[1].replace("'",'').lower()
+        bracket1 = get_big_brack(tourn)
+        bracket = BeautifulSoup(bracket1, 'html.parser')
+        bdata = bracket.find_all('div', class_="BracketMatchup__Wrapper")
+        ltp_data = get_ltp_rnd(tourn, orgdir)
+        #pgen, spt = bdata[62:63], 62
+        #if numb in range(48, 56):
+        #    pgen, spt = bdata[48:56], 48
+        # numb in range(56, 60):
+        #    pgen, spt = bdata[56:60], 56
+        #if numb in range(60, 62):
+        #    pgen, spt = bdata[60:62], 60
+        pgen, spt = get_sizes(bdata, numb)
+        if numb in [48, 56, 60, 62]:
+            wkey = ltp_data[0][0]
         else:
-            ppagen = teams_left + 1
-            tourn = solution[1].replace("'", '').lower()
-            prev = pd.read_html(f'{orgdir}/{tourn}_results_{ppagen}.html')[0]
-            prevbl = prev.iloc[:,0].tolist()
-        thingsnow = list(map(lambda a: a['name'], solution[0][0]))
-        curr_p = list(map(lambda a: id_peeps[a], thingsnow))
-        xlist = list(filter(lambda a: a not in curr_p, prevbl))
-        if len(xlist) == 0:
-            return "None"
-        return ", ".join(xlist)
+            pgrec = []
+            for pgame in range(spt, numb):
+                pgrec.append(diff_from_prev(63 - pgame))
+            wkey = list(filter(lambda a: a not in pgrec, ltp_data[0]))[0]
+        pgen2 = list(map(lambda a: a.find_all('div',
+                                class_='BracketCell__Name'), pgen))
+        pgen3 = list(map(lambda a: [a[0].get_text(),  a[1].get_text()],
+                                pgen2))
+        pgen4 = list(filter(lambda a: wkey in a[1], enumerate(pgen3)))
+        indx = pgen4[0][0] + spt
+        tnames = bdata[indx].find_all('div', class_='BracketCell__Name')
+        tscores = bdata[indx].find_all('div', class_='BracketCell__Score')
+        teams = list(map(lambda a: a.get_text(), tnames))
+        scores = list(map(lambda a: int(a.get_text()), tscores))
+        if scores[0] < scores[1]:
+            teams = teams[::-1]
+            scores = scores[::-1]
+        scorep = '  '.join([teams[0], f'{scores[0]}', '--',
+                            teams[1], f'{scores[1]}'])
+        return f"<br><h1 id='score'>{scorep}</h1><br><br>"
+    def do_jinja():
+        def find_elims():
+            teams_left = 64 - solution[0][2]
+            if teams_left == 16:
+                prevbl = list(map(lambda a: id_peeps[a], id_peeps))
+            else:
+                ppagen = teams_left + 1
+                tourn = solution[1].replace("'", '').lower()
+                prev = pd.read_html(f'{orgdir}/{tourn}_results_{ppagen}.html'
+                                    )[0]
+                prevbl = prev.iloc[:,0].tolist()
+            thingsnow = list(map(lambda a: a['name'], solution[0][0]))
+            curr_p = list(map(lambda a: id_peeps[a], thingsnow))
+            xlist = list(filter(lambda a: a not in curr_p, prevbl))
+            if len(xlist) == 0:
+                return "None"
+            return ", ".join(xlist)
+        environment = Environment(loader=FileSystemLoader(get_template()))
+        template = environment.get_template('template.html')
+        oheader = df_columns(solution)
+        prefix = solution[1].replace("'",'').lower()
+        with open(f'{orgdir}/brackets.json', 'r', encoding='utf-8') as fd2:
+            people = fd2.read()
+        id_peeps = dict(json.loads(people)[prefix])
+        dframe = pd.DataFrame(df_rows(solution[0][0], id_peeps),
+                              columns=oheader)
+        if solution[0][2] == 62 and dframe.shape[1] == 5:
+            dframe.drop(dframe.columns[3], axis=1, inplace=True)
+        return template.render(tourn=solution[1],
+                add_score = gscore(solution[0][2] - 1),
+                out_table=dframe.to_html(
+                escape=False, index=False), tyear=datetime.date.today().year,
+                tlevel=set_level(solution), loser_list=find_elims())
+
     if solution == 'Error':
         return solution
-    environment = Environment(loader=FileSystemLoader(get_template()))
-    template = environment.get_template('template.html')
-    oheader = df_columns(solution[0][0])
-    prefix = solution[1].replace("'",'').lower()
-    with open(f'{orgdir}/brackets.json', 'r', encoding='utf-8') as fd2:
-        people = fd2.read()
-    id_peeps = dict(json.loads(people)[prefix])
-    dframe = pd.DataFrame(df_rows(solution[0][0], id_peeps), columns=oheader)
-    tlevel = set_level(solution)
-    tyear = datetime.date.today().year
-    return template.render(tourn=solution[1], out_table=dframe.to_html(
-            escape=False, index=False), tyear=tyear, tlevel=tlevel,
-            loser_list=find_elims())
+    return do_jinja()
+    

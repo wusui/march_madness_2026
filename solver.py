@@ -109,14 +109,17 @@ def rank_picks(hdata):
             return 48
         if fullres in range(56, 60):
             return 56
-        return 60
+        if fullres in range(60, 62):
+            return 60
+        return 62
     def fcheck(win_list):
         def fchk_inner(poswin):
             return all(list(map(lambda a: a in poswin, win_list)))
         return fchk_inner
     last_full_rnd = hdata[0][0:get_lfr(len(hdata[0]))]
     won_this_round = hdata[0][len(last_full_rnd):]
-    rmatch = last_full_rnd[{48: 32, 56: 48, 60: 56}[len(last_full_rnd)]:]
+    rmatch = last_full_rnd[{48: 32, 56: 48, 60: 56, 62: 60
+                            }[len(last_full_rnd)]:]
     pattern = dit_lev(rmatch)
     hyp_sit = list(map(gen_poss(pattern),
                     list(range(2 ** (63 - len(last_full_rnd))))))
